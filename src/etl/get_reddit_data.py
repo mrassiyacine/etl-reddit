@@ -1,10 +1,14 @@
-import datetime
 import logging
+import os
+from datetime import datetime
 
 import pandas as pd
 from praw import Reddit
 
 logging.basicConfig(level=logging.INFO)
+
+
+DATA_FOLDER = "src/etl/data/"
 
 
 def connect_to_reddit(client_id: str, client_secret: str, user_agent: str) -> Reddit:
@@ -63,17 +67,18 @@ def extract_data(
     return all_posts
 
 
-def transform_load_data(posts: list, file_folder: str = "src/etl/data/") -> None:
+def transform_load_data(posts: list, file_folder: str = DATA_FOLDER) -> None:
     """Transform list of posts into a pandas DataFrame
     args:
         posts: list: list of posts
     return: pandas.DataFrame: DataFrame of posts
     """
     try:
+        os.makedirs(DATA_FOLDER, exist_ok=True)
         df = pd.DataFrame(posts)
         df["created"] = pd.to_datetime(df["created"], unit="s")
-        current_week = datetime.datetime.now().strftime("%Y-%U")
-        file_path = file_folder + f"{current_week}.csv"
+        current_date = datetime.now().strftime("%Y-%m-%d")
+        file_path = file_folder + f"{current_date}.csv"
         df.to_csv(file_path, index=False)
         logging.info("Successfully transformed and loaded data locally")
     except Exception as e:
