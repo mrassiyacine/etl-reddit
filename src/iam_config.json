@@ -1,0 +1,52 @@
+{
+    "roles": [
+      {
+        "role_name": "RedshiftS3AccessRole",
+        "description": "IAM Role to allow Redshift to read data from S3",
+        "trust_policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "redshift.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        }
+      }
+    ],
+    "policies": [
+      {
+        "policy_name": "RedshiftS3ReadPolicy",
+        "description": "Policy to allow Redshift to read and copy data from S3",
+        "policy_document": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:GetObject",
+                "s3:ListBucket"
+              ],
+              "Resource": [
+                "arn:aws:s3:::reddit-etl",
+                "arn:aws:s3:::reddit-etl/*"
+              ]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+              ],
+              "Resource": "*"
+            }
+          ]
+        }
+      }
+    ]
+  }
+  

@@ -8,9 +8,6 @@ from praw import Reddit
 logging.basicConfig(level=logging.INFO)
 
 
-DATA_FOLDER = "src/etl/data/"
-
-
 def connect_to_reddit(client_id: str, client_secret: str, user_agent: str) -> Reddit:
     """Connect to Reddit API using PRAW
     args:
@@ -67,14 +64,14 @@ def extract_data(
     return all_posts
 
 
-def transform_load_data(posts: list, file_folder: str = DATA_FOLDER) -> None:
+def transform_load_data(posts: list, file_folder: str) -> None:
     """Transform list of posts into a pandas DataFrame
     args:
         posts: list: list of posts
     return: pandas.DataFrame: DataFrame of posts
     """
     try:
-        os.makedirs(DATA_FOLDER, exist_ok=True)
+        os.makedirs(file_folder, exist_ok=True)
         df = pd.DataFrame(posts)
         df["created"] = pd.to_datetime(df["created"], unit="s")
         current_date = datetime.now().strftime("%Y-%m-%d")

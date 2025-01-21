@@ -45,6 +45,40 @@ class RedshiftManager:
 
         logging.info("RedshiftManager initialized.")
 
+    def create_cluster_if_not_exist(self) -> None:
+        """
+        Create a Redshift cluster if it doesn't exist.
+        """
+        logging.info(f"Checking if cluster {self.cluster_identifier} exists...")
+        try:
+            self.redshift_client.describe_clusters(
+                ClusterIdentifier=self.cluster_identifier
+            )
+            logging.info(f"Cluster {self.cluster_identifier} already exists.")
+        except self.redshift_client.exceptions.ClusterNotFoundFault:
+            logging.info(
+                f"Cluster {self.cluster_identifier} does not exist. Creating..."
+            )
+            self.redshift_client.create_cluster(
+                ClusterIdentifier=self.cluster_identifier,
+                NodeType="ra3.large",
+                MasterUsername=self.user,
+                MasterUserPassword=self.password,
+                DBName=self.database,
+                PubliclyAccessible=True,
+            )
+            self._wait_for_cluster_available()
+            logging.info(f"Cluster {self.cluster_identifier} created successfully.")
+
+    def _wait_for_cluster_available(self):
+        """Wait for the Redshift cluster to be available."""
+        waiter = self.redshift_client.get_waiter("cluster_available")
+        logging.info(
+            f"Waiting for cluster {self.cluster_identifier} to be available..."
+        )
+        waiter.wait(ClusterIdentifier=self.cluster_identifier)
+        logging.info(f"Cluster {self.cluster_identifier} is available.")
+
     def __enter__(self):
         """Enter the runtime context related to this object."""
         try:
@@ -81,8 +115,7 @@ class RedshiftManager:
             query: str: SQL query to execute
         """
         if self.conn is None:
-            logging.error("No connection to Redshift. Cannot execute query.")
-            return None
+            raise Exception("No connection to Redshift. Cannot execute query.")
         try:
             with self.conn.cursor() as cursor:
                 logging.debug(f"Executing query: {query}")
@@ -98,6 +131,7 @@ class RedshiftManager:
         self,
         table_name: str,
         s3_path: str,
+        iam_role: str,
         format_as: str = "CSV",
         ignore_header: int = 1,
     ):
@@ -111,6 +145,7 @@ class RedshiftManager:
         query = f"""
         COPY {table_name}
         FROM '{s3_path}'
+        IAM_ROLE '{iam_role}'
         FORMAT AS {format_as}
         IGNOREHEADER {ignore_header};
         """
